@@ -1,0 +1,270 @@
+#include "../include/Jugador.h"
+
+/*
+Alfredo Gallardo - 0639563
+Jesus Torres - 0640386
+*/
+
+//Creador de tipo de dato jugador
+Jugador::Jugador(GLfloat x,GLfloat y,GLfloat z,GLfloat Angle,GLfloat Look)
+	:moveAgent()
+	{
+	
+		glListBase(0);
+    	lista = glGenLists(2);
+    	
+	    material = new c_material[3]; 
+	//Componentes Material Nave
+	    //Sin Chocar
+        material[0].diffuse(0.2f,0.2f,0.2f); 
+        material[0].ambient(0.2f,0.2f,0.2f);
+        material[0].specular(0.6f,0.6f,0.6f);
+        material[0].emissive(0.0f,0.0f,0.0f);                        
+        material[0].phongsize(128.0f*0.1f);
+	    //Chocar T1
+        material[1].diffuse(0.9f,0.8f,0.8f); 
+        material[1].ambient(0.9f,0.8f,0.8f);
+        material[1].specular(0.6f,0.6f,0.6f);
+        material[1].emissive(0.0f,0.0f,0.0f);                        
+        material[1].phongsize(128.0f*0.1f);
+    	//Chocar T2 
+        material[2].diffuse(0.6f,0.4f,0.4f); 
+        material[2].ambient(0.6f,0.4f,0.4f);
+        material[2].specular(0.6f,0.6f,0.6f);
+        material[2].emissive(0.0f,0.0f,0.0f);                        
+        material[2].phongsize(128.0f*0.1f);                	
+	
+        Veces = 0;
+        TimeCT = 0.0f;
+        TimeT = 0.0f;
+        TimeD = 0.25f; 
+        TimeR = 0.25f; //Cada cuanto se puede disparar
+        
+		moveAgent::Assign(x,y,z,Angle,Look);
+		this->score = 0;
+
+        // -- CARGAMOS LOS MODELOS OBJ -----------------------------------------------
+        C_Obj *Modelo_OBJ = new C_Obj[1];
+        Modelo_OBJ[0].Carga( "Modelos/Tie-Fighter/Tie-Fighter.obj" );
+        
+        
+        // -- CREAMOS LAS LISTAS COMPILADAS USANDO LOS MODELOS OBJ -------------------
+        glNewList( lista + 0, GL_COMPILE ); // Sin textura
+		    glRotatef(180,0,0,1);
+		    glRotatef(80,1,0,0);
+		    glScalef(0.05,0.05,0.05);        
+            Modelo_OBJ[0].Dibuja_Todo_Shadows();
+        glEndList();
+        
+        // -- CARGAMOS LAS TEXTURAS DE LOS MODELOS OBJ -------------------------------
+        c_textura_2D *textura_2D[2];
+        textura_2D[0] = new c_textura_2D[ Modelo_OBJ[0].N_Texturas() ];
+        Modelo_OBJ[0].Carga_Texturas( textura_2D[0], 0 );
+
+        glNewList( lista + 1, GL_COMPILE ); // Con textura
+		    glRotatef(180,0,0,1);
+		    glRotatef(80,1,0,0);
+		    glScalef(0.05,0.05,0.05);        
+            Modelo_OBJ[0].Dibuja_Todo();
+        glEndList();
+                                        
+
+        // -- BORRAMOS LOS OBJETOS, YA NO LOS NECESITAMOS ----------------------------
+        delete[] Modelo_OBJ;
+
+/*
+		this->modelo = glmReadOBJ("Modelos/Batwing.obj");
+
+        glNewList( lista , GL_COMPILE ); 
+		    glRotatef(180,0,0,1);
+		    glRotatef(80,1,0,0);
+		    glScalef(0.0015,0.0015,0.0015);
+
+		    glmDraw(this->modelo, GLM_SMOOTH );
+        glEndList();
+*/
+
+
+		int i;
+		for(i=0; i<Max_Disparo ;++i)
+			Disparos[i] = new Disparo(i);
+
+	this->dminx = 0.16f;
+	this->dminy = 0.16f;
+	this->dminz = 0.16f;
+	this->dmaxx = 0.16f;
+	this->dmaxy = 0.16f;
+	this->dmaxz = 0.16f;
+
+	}
+	
+Jugador::~Jugador(){
+}
+
+//Reubicar el jugador en posicion incial
+void Jugador::ReSpam(GLfloat x,GLfloat y,GLfloat z){
+        Veces = 0;
+        TimeCT = 0.0f;
+        TimeT = 0.0f;
+
+		moveAgent::Assign(x,y,z,0,0);
+		this->score = 0;
+		
+		for(int i=0; i<Max_Disparo ;++i)
+			Disparos[i]->Alive = false;
+}
+
+//Actualizar los datos del jugador
+void Jugador::Update(float Time){
+    TimeD += Time - TimeT;	
+    if(this->collide){
+        TimeCT += Time - TimeT;
+    }
+    
+	
+	for(int i=0; i<Max_Disparo ;++i)
+		Disparos[i]->Update(this->z);
+	
+    TimeT = Time;
+	this->z -= 0.3f;
+	this->minz -= 0.3f;
+	this->maxz -= 0.3f;
+    
+    
+	moveAgent::Update();
+}
+
+//Dibuja la nave del jugador
+void Jugador::Draw(){
+
+    if(this->collide){
+        if(Veces < 4){
+            if(TimeCT < 0.5){
+                if(TimeCT < 0.2){
+            	    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+                }
+                else{
+            	    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+                }
+            }else{
+                Veces++;
+                TimeCT = 0;
+            }
+       }else{
+            this->collide = false;
+            Veces = 0;
+       }
+    }else{
+        material[0].activa();
+    }
+    
+                	    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+	glPushMatrix();
+    	glTranslatef(this->x,this->y,this->z);		
+		glCallList( lista + 1);
+	glPopMatrix();
+
+    material[0].desactiva();
+    material[1].desactiva();
+    material[2].desactiva();
+	
+         //Verificar el cubo de colision
+        glBegin(GL_LINES);
+
+	        glColor3ub(255,0,0);
+	        glVertex3f(this->minx,this->miny,this->minz);
+	        glVertex3f(this->maxx,this->maxy,this->maxz);
+
+        glEnd();
+
+	for(int i=0; i<Max_Disparo ;++i)
+		Disparos[i]->Draw();	
+	
+	moveAgent::Draw();
+}
+
+
+//Dibuja sombra nave del jugador
+void Jugador::Draw_Shadow(){
+
+    material[0].desactiva();
+    material[1].desactiva();
+    material[2].desactiva();
+    
+	glPushMatrix();
+    	glTranslatef(this->x,this->y,this->z);		
+		glCallList( lista + 0);
+	glPopMatrix();
+		
+}
+
+//Manejo de teclado
+void Jugador::Keyboard(unsigned char k){
+    switch (k){
+	case 'a': 
+		if (this->x > -2){
+			this->x -= 0.1;
+			this->minx -= 0.1;		
+			this->maxx -= 0.1;		
+		}
+
+		break;
+	case 'd': 
+		if (this->x < 2){
+			this->x += 0.1;
+			this->minx += 0.1;
+			this->maxx += 0.1;
+		}
+		break;
+	case 'w': 
+		if (this->y < 2){
+			this->y+= 0.1;
+			this->miny += 0.1;
+			this->maxy += 0.1;
+		}
+		break;
+	case 's': 
+		if (this->y > -2){
+			this->y-= 0.1;
+			this->miny -= 0.1;
+			this->maxy -= 0.1;
+		}
+		break; 
+    default:
+        break;
+    }
+}
+
+//validacion de las colisiones
+bool Jugador::Collision(float minX, float minY, float minZ, float maxX, float maxY, float maxZ){
+    bool Tmp = moveAgent::Collision(minX,minY,minZ,maxX,maxY,maxZ);
+	return Tmp;
+}
+
+bool Jugador::Collision(Target *Objetivo){
+    
+    bool Tmp = false;
+    for(int i=0; i<Max_Disparo && !Tmp ;++i)
+        if(Disparos[i]->Alive){
+            Tmp = Objetivo->Collision(Disparos[i]->minx,Disparos[i]->miny,Disparos[i]->minz,Disparos[i]->maxx,Disparos[i]->maxy,Disparos[i]->maxz,Disparos[i]->Light);
+            if(Tmp){
+                Disparos[i]->collide = true;
+                Disparos[i]->Alive = false;
+            }
+        }
+    return Tmp;
+}
+
+//DIsparos del jugador
+void Jugador::Disparar(Target *Objetivo = NULL){
+            
+	for(int i=0; TimeD >= TimeR && i<Max_Disparo ;++i)
+		if(!Disparos[i]->Alive)
+		{
+			Disparos[i]->Assign(this->x,this->y,this->z,this->Angle,this->Look,Objetivo);
+			TimeD = 0.0f;
+			break;
+		}
+}
+
+

@@ -1,0 +1,156 @@
+/*
+	Jesus Torres - 0640386
+	Alfredo Gallardo - 0630563
+
+*/
+
+#include "../include/Disparo.h"
+
+//Constructor de Disparo (inicial)
+Disparo::Disparo(int ID)
+	:moveAgent()
+	{
+        this->ID = ID;
+        this->Objetivo = NULL;
+        // Usamos las Luces LIGHT 3-6 para los disparos
+        switch(ID % 4){
+            case 0:
+                this->Light = GL_LIGHT3;
+                break;
+            case 1:
+                this->Light = GL_LIGHT4;
+                break;
+            case 2:
+                this->Light = GL_LIGHT5;
+                break;    
+            case 3:
+                this->Light = GL_LIGHT6;
+                break;                    
+        }
+            
+        luz = new c_luz[1];
+
+        luz[0].position( this->x,this->y,this->z );
+        luz[0].diffuse(  1.0f,  0.0f, 0.0f );
+        luz[0].ambient(   0.0f,  0.0f, 0.0f );
+        luz[0].puntual( this->Light );	
+		glLightf(this->Light, GL_CONSTANT_ATTENUATION, 0.05f);
+		glLightf(this->Light, GL_LINEAR_ATTENUATION, 1.0f);
+		glLightf(this->Light, GL_QUADRATIC_ATTENUATION, 0.05f);
+
+        material = new c_material[1]; //1 Materiales
+
+        material[0].diffuse(  0.9f, 0.7f, 1.0f );
+        material[0].ambient(  0.9f, 0.7f, 1.0f );
+        material[0].specular( 1.0f, 1.0f, 1.0f );
+        material[0].emissive( 1.0f, 0.0f, 0.0f );
+        material[0].phongsize( 0.4f * 128.0f );
+        
+		glListBase(0);
+    	lista = glGenLists(1);
+        
+        glNewList( lista , GL_COMPILE ); 
+		    glutSolidCone(0.05,0.5,2,5);	
+        glEndList();
+        
+	}
+
+//Destructor de disparo
+Disparo::~Disparo(){
+
+}
+	
+//Asigna valores a las variables de Disparo
+void Disparo::Assign(GLfloat x,GLfloat y,GLfloat z,GLfloat Angle,GLfloat Look,Target *Objetivo = NULL)
+{
+    this->Objetivo = Objetivo;     
+	moveAgent::Assign(x,y,z,Angle,Look);
+	// Se definen los puntos de la caja de colisiones
+	this->minx = x - 0.1f;
+	this->miny = y - 0.1f;
+	this->minz = z + 0.1f;
+	
+	this->maxx = x + 0.1f;
+	this->maxy = y + 0.1f;
+	this->maxz = z - 0.1f;
+
+//Al cliclear un objeto, calculamos con la ecuacion en forma vectorial de la recta
+//para mover el disparo hacia el objetivo.
+    if(Objetivo!=NULL){
+        float x0 = this->Objetivo->x;
+        float y0 = this->Objetivo->y;
+        float z0 = this->Objetivo->z;
+        
+        float Modulo = sqrt((z0 - this->z)*(z0 - this->z) + (x0 - this->x)*(x0 -this->x) + ( y0 - this->y)* (y0 -this->y) );
+        
+        vx = (x0 - this->x)/Modulo;
+        vy = (y0 - this->y)/Modulo;
+        vz = (z0 - this->z)/Modulo;
+    }
+    glEnable( this->Light);    
+}
+
+//Actualizar las variables del sistema
+void Disparo::Update(GLfloat Actualz){
+	if(this->Alive){
+        if(this->Objetivo != NULL)
+            UpdateObj();
+        else
+            UpdateSObj(Actualz);
+        luz[0].position( this->x,this->y,this->z );
+	}else
+        glDisable(this->Light);
+
+	moveAgent::Update();
+}
+
+//Actualiza el movimiento del disparo hacia un objetivo
+void Disparo::UpdateObj(){
+    
+    
+    this->x = this->x + 0.5 * vx; 
+    this->y = this->y + 0.5 * vy;
+    this->z = this->z + 0.5 * vz;
+
+    this->minx += 0.5 * vx;
+    this->miny += 0.5 * vy;
+    this->minz += 0.5 * vz;
+	this->maxx += 0.5 * vx;
+    this->maxy += 0.5 * vy;
+    this->maxz += 0.5 * vz;
+
+}
+
+//Actualiza el movimiento del disparo hacia el vacio
+void Disparo::UpdateSObj(GLfloat Actualz){
+	if(this->z < Actualz -105){
+		this->Alive = false;
+		glDisable(this->Light);
+	}
+    this->z -= 0.5;
+    this->minz -= 0.5 ;
+    this->maxz -= 0.5 ;
+
+}
+
+// Dibuja el disparo
+void Disparo::Draw(){
+	//Mientras esta vivo	
+	if(this->Alive){    
+        luz[0].posiciona();
+        material[0].activa();
+	    glPushMatrix();	
+    	    glTranslatef(this->x,this->y,this->z);
+	    	glCallList( lista );	    
+	    glPopMatrix();
+        material[0].desactiva();
+	moveAgent::Draw();
+	}
+}
+
+// Verifica la colision del disparo
+bool Disparo::Collision(float minX, float minY, float minZ, float maxX, float maxY, float maxZ){
+    bool Temp = moveAgent::Collision(minX,  minY,  minZ,  maxX, maxY,  maxZ);
+    this->Alive = !this->collide;
+	return 	Temp;
+}

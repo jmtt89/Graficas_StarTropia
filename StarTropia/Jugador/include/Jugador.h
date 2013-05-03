@@ -1,0 +1,49 @@
+#ifndef JUGADOR_H
+#define JUGADOR_H
+
+#include <GL/gl.h>										
+#include <GL/glu.h>		
+#include "../Disparo/include/Disparo.h"
+#include "../../moveAgent/include/moveAgent.h"
+#include "../../Resources/Libs/Materiales.h"
+#include "../../Resources/Libs/Cargador_Obj.h"
+#include "../../Resources/Libs/Texturas_2D.h"
+
+class Jugador: public moveAgent{
+	public:
+        //Atributos
+	    int Veces;
+        float TimeCT;
+        float TimeT;
+        
+        float TimeD;
+        float TimeR;
+        
+	    GLMmodel* modelo;
+	    
+	    
+	    int score;
+        c_material *material;
+        GLuint lista;
+	    
+        //Funciones
+        Jugador(GLfloat x,GLfloat y,GLfloat z,GLfloat Angle,GLfloat Look);
+	    virtual ~Jugador();
+	
+	    void Update(float Time);
+	    void Draw();
+	    void Draw_Shadow();
+	    void ReSpam(GLfloat x,GLfloat y,GLfloat z);
+	    
+	    void Disparar(Target *Objetivo = NULL);
+	    bool Collision(float minX, float minY, float minZ, float maxX, float maxY, float maxZ);
+	    bool Collision(Target *Objetivo);
+	    void Keyboard(unsigned char k);
+	
+	private:
+		static const int Max_Disparo = 4;
+		Disparo *Disparos[Max_Disparo];
+		
+};
+
+#endif

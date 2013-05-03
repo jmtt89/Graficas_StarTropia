@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <GL/glut.h>
+
+#include "Mundo/include/Mundo.h"
+/*
+Alfredo Gallardo - 0639563
+Jesus Torres - 0640386
+*/
+
+// Variables GLobales
+using namespace std;
+
+int Width = 800;
+int Height = 600;
+float FPS = 30.0f;
+Mundo* nivel;
+
+bool en_pause = false;
+  
+// INicializacion del programa
+void init(){
+	nivel = new Mundo();
+}
+
+// Actualizacion de las variables del mapa, basandose en los click de la maquina
+void Update(){
+	nivel->Update((float)clock()/CLOCKS_PER_SEC);
+}
+
+//Dibuja los elementos del mundo, a menos que se este en pausa
+void Draw(){
+	if (!en_pause)
+		nivel->Draw();
+}
+
+//Cambia el FrameBuffer
+void FrameBuffer(int i){
+    Update();
+    glutPostRedisplay();
+    glutTimerFunc(1000.0f/FPS, FrameBuffer, 1000.0f/FPS);
+}
+
+//Manejo del Keyboard
+static void Keyboard (unsigned char k, int x, int y){
+
+    switch (k){
+        case 'p': // Pause
+            en_pause = !en_pause;
+            break;
+    }
+    
+    if (!en_pause){
+        
+        switch (k){
+            case 27:  /* Escape */
+                exit(0);
+                break;
+            case '+':            
+                FPS *= 2;
+                break;
+            case '-':
+                if(FPS < 2)
+                    FPS = 1;           
+                else
+                    FPS /= 2;
+                break;
+        }
+    	nivel->Keyboard(k);
+	}
+}
+
+/** Click con el mouse **/
+void mouse_click(int button, int state, int x, int y) {
+    if(button == GLUT_LEFT_BUTTON && !en_pause)
+        if(state == GLUT_DOWN)
+		    nivel->mouse(x,y);
+}
+
+// Ajuste de la pantalla.
+void Reshape(int w, int h){
+
+    Width = w;
+    Height = h;
+	if (h==0)
+		Height=1;
+		
+    nivel->Reshape(Width,Height);
+}
+
+//Funcion principal del programa
+int main(int argc,char** argv) {
+	glutInit(&argc, argv);
+
+	glutInitWindowSize(Width,Height);
+	glutInitWindowPosition(100,100);
+	glutCreateWindow("StarTropia");
+
+	init();
+	
+	glutKeyboardFunc(Keyboard);
+	glutMouseFunc( mouse_click );
+	glutDisplayFunc(Draw);
+	glutReshapeFunc(Reshape);
+    glutTimerFunc(0.01, FrameBuffer, 1000.0f/FPS);
+    
+    
+	glutMainLoop();
+	return 0;
+}

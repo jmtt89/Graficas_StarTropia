@@ -1,0 +1,28 @@
+#ifndef MOVEAGENT_H
+#define MOVEAGENT_H
+
+#include <iostream>
+#include <sstream>
+
+class moveAgent{
+	public:
+        //Atributos
+		GLfloat x,y,z;
+		GLfloat Angle;
+		GLfloat Look;
+		bool Alive;
+        //Funciones
+        moveAgent();
+		virtual ~moveAgent();
+		
+		void Assign(GLfloat x,GLfloat y,GLfloat z,GLfloat Angle,GLfloat Look);
+		void Update();
+		void Draw();
+		
+		bool Collision();
+	private:
+		// posiblemente haya que agregar un bounding box o algo similiar para calular colisiones
+		
+};
+
+#endif

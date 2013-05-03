@@ -1,0 +1,331 @@
+//------------------------------------------------------------------------------
+//-- TUTORIAL SDL + OPENGL ( Programado en C++ con Dev-C++ 4.9.9.2 )          --
+//------------------------------------------------------------------------------
+//-- AUTOR: PIPAGERARDO                                                       --
+//-- EMAIL: pipagerardo@hotmail.es                                            --
+//-- SUGERENCIAS: (Foros privados de programación) www.scenebeta.com          --
+//-- FECHA ÚLTIMA MODIFICACIÓN: 31/03/2010                                    --
+//------------------------------------------------------------------------------
+//-- Todo  el  código  y  contenido  de  este  tutorial es exclusivo  para el --
+//-- aprendizaje tanto del autor como de los que colaboren en él. Sin el  más --
+//-- mínimo ánimo de lucro, siempre por la satisfacción del aprendizaje y del --
+//-- trabajo bien hecho.                                                      --
+//-- No  me  hago  responsable  del  daño  producido  por  el  uso  indebido, --
+//-- modificaciones  mal  intencionadas,  ánimo  de  lucro,  etc...           --
+//-- Solo pido al que le sea de utilidad este código que colabore en su mejora--
+//-- y perfeccionamiento poniéndomelo en conocimiento por correo electrónico. --
+//------------------------------------------------------------------------------
+
+#include "Entorno.h"
+
+float c_entorno::dot(float Ax,float Ay, float Bx, float By){
+    return Ax*Bx+Ay*By;
+}
+
+float c_entorno::Wi(float A,float Dx,float Dy,float Px, float Py,float w)
+{
+   float Ret = A * sin(dot(Dx,Dy,Px,Py)*w);
+   return Ret;
+}
+
+float c_entorno::Hi(float A1,float A2,float D1x,float D1y,float D2x,float D2y,float Px,float Py,float w1,float w2)
+{
+   float Sum = 0.0;
+   Sum += Wi(A1,D1x,D1y,Px,Py,w1);
+   Sum += Wi(A2,D2x,D2y,Px,Py,w2);  
+     
+   return Sum; 
+}
+
+float c_entorno::dxHi(float A1,float A2,float D1x,float D1y,float D2x,float D2y,float Px,float Py,float w1,float w2)
+{
+   float Sum = 0.0;
+   Sum += (w1 * D1x * A1 * cos(dot(D1x,D1y,Px,Py) * w1 ));
+   Sum += (w2 * D2x * A2 * cos(dot(D2x,D2y,Px,Py) * w2 ));
+         
+   return Sum;
+}
+
+float c_entorno::dzHi(float A1,float A2,float D1x,float D1y,float D2x,float D2y,float Px,float Py,float w1,float w2)
+{
+   float Sum = 0.0;
+   Sum += (w1 * D1y * A1 * cos(dot(D1x,D1y,Px,Py) * w1 ));
+   Sum += (w2 * D2y * A2 * cos(dot(D2x,D2y,Px,Py) * w2 ));
+         
+   return Sum;
+}
+
+c_entorno::c_entorno(int width, int height, const char *direccion){
+  strcpy( &entorno_nombres[0][0], direccion );
+  strcpy( &entorno_nombres[1][0], direccion );
+  strcpy( &entorno_nombres[2][0], direccion );
+  strcpy( &entorno_nombres[3][0], direccion );
+  strcpy( &entorno_nombres[4][0], direccion );
+  strcpy( &entorno_nombres[5][0], direccion );
+  strcat( &entorno_nombres[0][0], "positive_x.jpg" );
+  strcat( &entorno_nombres[1][0], "negative_x.jpg" );
+  strcat( &entorno_nombres[2][0], "positive_y.jpg" );
+  strcat( &entorno_nombres[3][0], "negative_y.jpg" );
+  strcat( &entorno_nombres[4][0], "positive_z.jpg" );
+  strcat( &entorno_nombres[5][0], "negative_z.jpg" );
+  glGenTextures(6, &tex_fondo[0] );
+  for( int n = 0; n <6 ; n++ ) {
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[n] );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    imagen[n] = IMG_Load( &entorno_nombres[n][0] );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imagen[n]->w, imagen[n]->h, 0, GL_RGB, GL_UNSIGNED_BYTE, imagen[n]->pixels);
+    SDL_FreeSurface( imagen[n] );
+    imagen[n] = NULL;
+  }
+  // glListBase( 0 );
+  GLfloat Suelo_pos[3] = { 0.0f, -2.3f, 0.0f };  
+  env = 60;
+  lista_fondo = glGenLists(2); // 0-Cube_Map, 1 Suelo
+  glNewList( lista_fondo + 0, GL_COMPILE );
+  glPushMatrix();
+    glTranslatef( 0.0f, 1.2f, 0.0f );  
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, 0.0f, 1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i( -env,  env, -env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i( -env, -env, -env );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i(  env, -env, -env ); 
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i(  env,  env, -env ); 
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[0] );
+    glBegin( GL_QUADS ); glNormal3f( 1.0f, 0.0f, 0.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i( -env,  env,   env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i( -env, -env,   env );  
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env, -env,  -env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env,  env,  -env );
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[1] );
+    glBegin( GL_QUADS ); glNormal3f( -1.0f, 0.0f, 0.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env,  env,  -env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env, -env,  -env );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i(  env, -env,   env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i(  env,  env,   env ); 
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[4] );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, 0.0f, -1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env,  env,  env ); 
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env, -env,  env );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env, -env,  env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env,  env,  env );
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[2] );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, -1.0f, 0.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env,  env,  env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env,  env, -env );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env,  env, -env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env,  env,  env ); 
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[3] );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, -1.0f, 0.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env, -env,  env );         
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env, -env, -env ); 
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env, -env, -env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env, -env,  env );
+    glEnd();
+  glPopMatrix();    
+  glEndList();
+  
+  GLint num = 10, ancho = 1;
+  glNewList( lista_fondo + 1, GL_COMPILE ); 
+    glPushMatrix();
+
+    glTranslatef( Suelo_pos[0], Suelo_pos[1], Suelo_pos[2] );
+    for ( GLint zz = 0; zz <= 110; ++zz ) {
+    for ( GLfloat xx = -10; xx <= 10; xx += 0.1 ) {
+        GLfloat x =(GLfloat)xx/1.0f;
+        GLfloat z =(GLfloat)zz/1.0f;
+
+        float W[2];
+        W[0] = (2.0*3.14)/4 ;
+        W[1] = (2.0*3.14)/8 ;
+        
+        float A[2];
+        A[0] = 0.1;
+        A[1] = 0.15;
+        
+        glBegin( GL_QUADS );
+            glNormal3f( -dxHi(A[0],A[1],1,-1,-1,1,x,z,W[0],W[1]), 1.0f, -dzHi(A[0],A[1],1,-1,-1,1,x,z,W[0],W[1]) );
+            glVertex3f(  x        , Hi(A[0],A[1],1,-1,-1,1,x,z,W[0],W[1]), z         );
+            glNormal3f( -dxHi(A[0],A[1],1,-1,-1,1,x,z+ancho,W[0],W[1]), 1.0f, -dzHi(A[0],A[1],1,-1,-1,1,x,z+ancho,W[0],W[1]) );      
+            glVertex3f(  x        , Hi(A[0],A[1],1,-1,-1,1,x,z+ancho,W[0],W[1]), z + ancho );
+            glNormal3f( -dxHi(A[0],A[1],1,-1,-1,1,x+ancho,z+ancho,W[0],W[1]), 1.0f, -dzHi(A[0],A[1],1,-1,-1,1,x+ancho,z+ancho,W[0],W[1]) );      
+            glVertex3f(  x + ancho, Hi(A[0],A[1],1,-1,-1,1,x+ancho,z+ancho,W[0],W[1]), z + ancho );
+            glNormal3f( -dxHi(A[0],A[1],1,-1,-1,1,x+ancho,z,W[0],W[1]), 1.0f, -dzHi(A[0],A[1],1,-1,-1,1,x+ancho,z,W[0],W[1]) );      
+            glVertex3f(  x + ancho, Hi(A[0],A[1],1,-1,-1,1,x+ancho,z,W[0],W[1]), z         );
+        glEnd();
+    } }
+    
+    glPopMatrix();
+  glEndList();    
+    
+    
+    
+}
+
+
+
+c_entorno::c_entorno( const char *direccion ) {
+  strcpy( &entorno_nombres[0][0], direccion );
+  strcpy( &entorno_nombres[1][0], direccion );
+  strcpy( &entorno_nombres[2][0], direccion );
+  strcpy( &entorno_nombres[3][0], direccion );
+  strcpy( &entorno_nombres[4][0], direccion );
+  strcpy( &entorno_nombres[5][0], direccion );
+  strcat( &entorno_nombres[0][0], "positive_x.jpg" );
+  strcat( &entorno_nombres[1][0], "negative_x.jpg" );
+  strcat( &entorno_nombres[2][0], "positive_y.jpg" );
+  strcat( &entorno_nombres[3][0], "negative_y.jpg" );
+  strcat( &entorno_nombres[4][0], "positive_z.jpg" );
+  strcat( &entorno_nombres[5][0], "negative_z.jpg" );
+  glGenTextures(6, &tex_fondo[0] );
+  for( int n = 0; n <6 ; n++ ) {
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[n] );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    imagen[n] = IMG_Load( &entorno_nombres[n][0] );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imagen[n]->w, imagen[n]->h, 0, GL_RGB, GL_UNSIGNED_BYTE, imagen[n]->pixels);
+    SDL_FreeSurface( imagen[n] );
+    imagen[n] = NULL;
+  }
+  // glListBase( 0 );
+  env = 1000;
+  lista_fondo = glGenLists(2); // 0-Cube_Map, 1 Suelo
+  glNewList( lista_fondo + 0, GL_COMPILE );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, 0.0f, 1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i( -env,  env, -env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i( -env, -env, -env );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i(  env, -env, -env ); 
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i(  env,  env, -env ); 
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[0] );
+    glBegin( GL_QUADS ); glNormal3f( 1.0f, 0.0f, 0.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i( -env,  env,   env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i( -env, -env,   env );  
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env, -env,  -env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env,  env,  -env );
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[1] );
+    glBegin( GL_QUADS ); glNormal3f( -1.0f, 0.0f, 0.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env,  env,  -env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env, -env,  -env );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i(  env, -env,   env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i(  env,  env,   env ); 
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[4] );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, 0.0f, -1.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env,  env,  env ); 
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env, -env,  env );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env, -env,  env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env,  env,  env );
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[2] );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, -1.0f, 0.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env,  env,  env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env,  env, -env );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env,  env, -env );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env,  env,  env ); 
+    glEnd();
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[3] );
+    glBegin( GL_QUADS ); glNormal3f( 0.0f, -1.0f, 0.0f );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex3i(  env, -env,  env );         
+      glTexCoord2f( 0.0f, 1.0f ); glVertex3i(  env, -env, -env ); 
+      glTexCoord2f( 1.0f, 1.0f ); glVertex3i( -env, -env, -env );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex3i( -env, -env,  env );
+    glEnd();
+  glEndList();
+  
+  GLfloat Suelo_pos[3] = { 0.0f, -2.3f, 0.0f };
+  GLint num = 12, ancho = 1;
+  glNewList( lista_fondo + 1, GL_COMPILE ); 
+    glPushMatrix();
+    glTranslatef( Suelo_pos[0], Suelo_pos[1], Suelo_pos[2] );
+    for ( GLint zz = -num; zz <= num; zz += ancho ) {
+    for ( GLint xx = -num; xx <= num; xx += ancho ) {
+        GLfloat x =(GLfloat)xx;
+        GLfloat z =(GLfloat)zz;                
+    glBegin( GL_QUADS );
+      glNormal3f(   0.0f,  1.0f,   0.0f );
+      glVertex3f(  x,         0, z         );
+      glVertex3f(  x,         0, z + ancho );
+      glVertex3f(  x + ancho, 0, z + ancho );
+      glVertex3f(  x + ancho, 0, z         );
+    glEnd();
+    } }
+    glPopMatrix();
+  glEndList();
+  
+}
+
+void c_entorno::mostrar( void ) {
+  glPushAttrib( GL_FOG_BIT );
+  glDisable( GL_FOG );
+  glEnable( GL_TEXTURE_2D ); 
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
+    glBindTexture( GL_TEXTURE_2D, tex_fondo[5] );
+    glCallList( lista_fondo + 0);
+  glDisable( GL_TEXTURE_2D ); 
+  glPopAttrib();
+  
+}
+
+void c_entorno::Dibujar_Todo(void){
+
+}
+
+void c_entorno::Dibujar_Fondo(void){
+
+}
+
+void c_entorno::Dibujar_Suelo(void){
+    glCallList( lista_fondo + 1);
+}
+
+void c_entorno::crea_cube_map( void ) {
+  cubefaces[0] = GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT;
+  cubefaces[1] = GL_TEXTURE_CUBE_MAP_NEGATIVE_X_EXT;
+  cubefaces[2] = GL_TEXTURE_CUBE_MAP_POSITIVE_Y_EXT;
+  cubefaces[3] = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_EXT;
+  cubefaces[4] = GL_TEXTURE_CUBE_MAP_POSITIVE_Z_EXT;
+  cubefaces[5] = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_EXT;
+  glGenTextures(1, &tex_cube_map );
+  glBindTexture(GL_TEXTURE_CUBE_MAP_EXT, tex_cube_map );
+  glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexParameteri(GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST );
+  for( int n = 0; n <6 ; n++ ) {
+    imagen[n] = IMG_Load( &entorno_nombres[n][0] );
+    gluBuild2DMipmaps( cubefaces[n], GL_RGB, imagen[n]->w, imagen[n]->h, GL_RGB, GL_UNSIGNED_BYTE, imagen[n]->pixels);
+    SDL_FreeSurface( imagen[n] );
+    imagen[n] = NULL;
+  }
+}
+
+void c_entorno::activa_cube_map( void ) {
+    glEnable( GL_TEXTURE_CUBE_MAP_EXT );
+    glBindTexture( GL_TEXTURE_CUBE_MAP_EXT, tex_cube_map );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_CUBE_MAP_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+    glTexGeni( GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT );
+    glTexGeni( GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT );
+    glTexGeni( GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT );
+    glEnable( GL_TEXTURE_GEN_S ); 
+    glEnable( GL_TEXTURE_GEN_T ); 
+    glEnable( GL_TEXTURE_GEN_R );
+}
+
+void c_entorno::desactiva_cube_map( void ) {
+    glDisable( GL_TEXTURE_GEN_S ); 
+    glDisable( GL_TEXTURE_GEN_T ); 
+    glDisable( GL_TEXTURE_GEN_R );
+    glDisable(GL_TEXTURE_CUBE_MAP_EXT);
+}
+
+c_entorno::~c_entorno( void ) {
+  glDeleteLists( lista_fondo,  2 );
+  glDeleteTextures( 6, &tex_fondo[0] );
+  glDeleteTextures( 1, &tex_cube_map  );
+}

@@ -1,0 +1,49 @@
+#include "../include/moveAgent.h"
+
+moveAgent::moveAgent(){
+	std::cout << "Constructor Move Agent" << std::endl;
+	this->x = 0.0f;
+	this->y = 0.0f;
+	this->z = 0.0f;
+	this->Angle = 0.0f;
+	this->Look = 0.0f;
+	this->Alive = false;
+}
+
+moveAgent::~moveAgent()
+{
+	std::cout << "Destructor de Move Agent" << std::endl;
+	
+	
+}
+
+void moveAgent::Assign(GLfloat x,GLfloat y,GLfloat z,GLfloat Angle,GLfloat Look){
+	std::cout << "Asignador Move Agent" << std::endl;
+	this->x = x;
+	this->y = y;
+	this->z = z;
+	this->Angle = Angle;
+	this->Look = Look;
+	this->Alive = true;
+}
+
+void moveAgent::Update()
+{
+	std::cout << "Update Move Agent" << std::endl;
+	//this->x += 0.1f;
+}
+
+void moveAgent::Draw()
+{
+	std::cout << "Draw Move Agent" << std::endl;
+}
+
+
+bool moveAgent::Collision()
+{
+	std::cout << "Collision Move Agent" << std::endl;
+	return false;
+}
+
+
+
