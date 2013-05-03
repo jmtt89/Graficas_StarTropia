@@ -15,3 +15,6 @@ El Shooter es con una nave en 3 Persona
 Existe un terreno creado proceduralmente
 Se aplican Texturas, Luces y Sombras
 Tambien Sonidos
+
+Video Demostrativo:
+http://www.youtube.com/watch?v=yGC7gXd0kEc&feature=player_embedded
